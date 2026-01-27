@@ -5,6 +5,8 @@ import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { Topic } from '../models/Topic.js';
 import { Lesson } from '../models/Lesson.js';
 import { Question } from '../models/Question.js';
+import { Vocabulary } from '../models/Vocabulary.js';
+import { Quiz } from '../models/Quiz.js';
 
 const router = Router();
 
@@ -37,6 +39,8 @@ router.delete('/topics/:id', async (req, res) => {
   await Topic.deleteOne({ _id: req.params.id });
   await Lesson.deleteMany({ topicId: req.params.id });
   await Question.deleteMany({ topicId: req.params.id });
+  await Vocabulary.deleteMany({ topicId: req.params.id });
+  await Quiz.deleteMany({ topicId: req.params.id });
   return res.json({ ok: true });
 });
 
@@ -151,6 +155,152 @@ router.put('/questions/:id', async (req, res) => {
 
 router.delete('/questions/:id', async (req, res) => {
   await Question.deleteOne({ _id: req.params.id });
+  return res.json({ ok: true });
+});
+
+// Vocabulary CRUD
+router.get('/topics/:topicId/vocabularies', async (req, res) => {
+  const vocabularies = await Vocabulary.find({ topicId: req.params.topicId }).sort({ createdAt: 1 });
+  return res.json({ vocabularies });
+});
+
+router.post('/topics/:topicId/vocabularies', async (req, res) => {
+  const body = z
+    .object({
+      lessonId: z.string().optional(),
+      word: z.string().min(1),
+      meaning: z.string().min(1),
+      pronunciation: z.string().optional(),
+      partOfSpeech: z.enum(['noun', 'verb', 'adjective', 'adverb', 'pronoun', 'preposition', 'conjunction', 'interjection']).optional(),
+      example: z.string().optional(),
+      level: z.string().optional(),
+      audioUrl: z.string().optional(),
+      imageUrl: z.string().optional(),
+    })
+    .parse(req.body);
+
+  const vocab = await Vocabulary.create({
+    topicId: req.params.topicId,
+    lessonId: body.lessonId || null,
+    word: body.word,
+    meaning: body.meaning,
+    pronunciation: body.pronunciation || '',
+    partOfSpeech: body.partOfSpeech || 'noun',
+    example: body.example || '',
+    level: body.level || 'A1',
+    audioUrl: body.audioUrl || '',
+    imageUrl: body.imageUrl || '',
+  });
+
+  return res.json({ vocabulary: vocab });
+});
+
+router.put('/vocabularies/:id', async (req, res) => {
+  const body = z
+    .object({
+      lessonId: z.string().optional(),
+      word: z.string().min(1),
+      meaning: z.string().min(1),
+      pronunciation: z.string().optional(),
+      partOfSpeech: z.enum(['noun', 'verb', 'adjective', 'adverb', 'pronoun', 'preposition', 'conjunction', 'interjection']).optional(),
+      example: z.string().optional(),
+      level: z.string().optional(),
+      audioUrl: z.string().optional(),
+      imageUrl: z.string().optional(),
+    })
+    .parse(req.body);
+
+  const vocab = await Vocabulary.findByIdAndUpdate(
+    req.params.id,
+    {
+      lessonId: body.lessonId || null,
+      word: body.word,
+      meaning: body.meaning,
+      pronunciation: body.pronunciation || '',
+      partOfSpeech: body.partOfSpeech || 'noun',
+      example: body.example || '',
+      level: body.level || 'A1',
+      audioUrl: body.audioUrl || '',
+      imageUrl: body.imageUrl || '',
+    },
+    { new: true }
+  );
+
+  return res.json({ vocabulary: vocab });
+});
+
+router.delete('/vocabularies/:id', async (req, res) => {
+  await Vocabulary.deleteOne({ _id: req.params.id });
+  return res.json({ ok: true });
+});
+
+// Quiz CRUD
+router.get('/topics/:topicId/quizzes', async (req, res) => {
+  const quizzes = await Quiz.find({ topicId: req.params.topicId }).sort({ createdAt: 1 });
+  return res.json({ quizzes });
+});
+
+router.post('/topics/:topicId/quizzes', async (req, res) => {
+  const body = z
+    .object({
+      lessonId: z.string().optional(),
+      title: z.string().min(1),
+      description: z.string().optional(),
+      questionIds: z.array(z.string()).optional(),
+      timeLimit: z.number().optional(),
+      passingScore: z.number().min(0).max(100).optional(),
+      type: z.enum(['practice', 'assessment', 'final']).optional(),
+    })
+    .parse(req.body);
+
+  const quiz = await Quiz.create({
+    topicId: req.params.topicId,
+    lessonId: body.lessonId || null,
+    title: body.title,
+    description: body.description || '',
+    questionIds: body.questionIds || [],
+    timeLimit: body.timeLimit || null,
+    passingScore: body.passingScore || 70,
+    type: body.type || 'practice',
+  });
+
+  return res.json({ quiz });
+});
+
+router.put('/quizzes/:id', async (req, res) => {
+  const body = z
+    .object({
+      lessonId: z.string().optional(),
+      title: z.string().min(1),
+      description: z.string().optional(),
+      questionIds: z.array(z.string()).optional(),
+      timeLimit: z.number().optional(),
+      passingScore: z.number().min(0).max(100).optional(),
+      type: z.enum(['practice', 'assessment', 'final']).optional(),
+      isActive: z.boolean().optional(),
+    })
+    .parse(req.body);
+
+  const quiz = await Quiz.findByIdAndUpdate(
+    req.params.id,
+    {
+      lessonId: body.lessonId || null,
+      title: body.title,
+      description: body.description || '',
+      questionIds: body.questionIds || [],
+      timeLimit: body.timeLimit || null,
+      passingScore: body.passingScore || 70,
+      type: body.type || 'practice',
+      isActive: body.isActive ?? true,
+    },
+    { new: true }
+  );
+
+  return res.json({ quiz });
+});
+
+router.delete('/quizzes/:id', async (req, res) => {
+  await Quiz.deleteOne({ _id: req.params.id });
   return res.json({ ok: true });
 });
 

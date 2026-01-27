@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useState } from 'react';
+import { useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
@@ -9,10 +10,54 @@ export function AuthProvider({ children }) {
   const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken') || '');
   const [refreshToken, setRefreshToken] = useState(localStorage.getItem('refreshToken') || '');
 
-  async function login(email, password) {
-    const res = await fetch(`${API_BASE}/api/auth/login`, {
+  async function refreshTokens() {
+    if (!refreshToken) throw new Error('No refresh token');
+    const res = await fetch(`${API_BASE}/api/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Refresh failed');
+    setAccessToken(data.accessToken);
+    setRefreshToken(data.refreshToken);
+    localStorage.setItem('accessToken', data.accessToken);
+    localStorage.setItem('refreshToken', data.refreshToken);
+    return data.accessToken;
+  }
+
+  async function apiCall(url, options = {}) {
+    let token = accessToken;
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    });
+    if (res.status === 401 && refreshToken) {
+      try {
+        token = await refreshTokens();
+        return fetch(url, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            ...options.headers,
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } catch {
+        logout();
+        throw new Error('Session expired');
+      }
+    }
+    return res;
+  }
+
+  async function login(email, password) {
+    const res = await apiCall(`${API_BASE}/api/auth/login`, {
+      method: 'POST',
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
@@ -26,9 +71,8 @@ export function AuthProvider({ children }) {
   }
 
   async function register(payload) {
-    const res = await fetch(`${API_BASE}/api/auth/register`, {
+    const res = await apiCall(`${API_BASE}/api/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     const data = await res.json();
@@ -42,6 +86,13 @@ export function AuthProvider({ children }) {
   }
 
   function logout() {
+    if (user) {
+      fetch(`${API_BASE}/api/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      }).catch(() => {});
+    }
     setUser(null);
     setAccessToken('');
     setRefreshToken('');
@@ -49,8 +100,21 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('refreshToken');
   }
 
+  useEffect(() => {
+    if (accessToken && !user) {
+      fetch(`${API_BASE}/api/user/me`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.user) setUser(data.user);
+        })
+        .catch(() => {});
+    }
+  }, [accessToken, user]);
+
   const value = useMemo(
-    () => ({ user, accessToken, refreshToken, login, register, logout }),
+    () => ({ user, accessToken, refreshToken, login, register, logout, apiCall }),
     [user, accessToken, refreshToken]
   );
 

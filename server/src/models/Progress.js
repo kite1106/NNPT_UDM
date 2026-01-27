@@ -5,7 +5,11 @@ const progressSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     topicId: { type: mongoose.Schema.Types.ObjectId, ref: 'Topic', required: true },
     completedLessonIds: { type: [mongoose.Schema.Types.ObjectId], default: [] },
+    completedQuizIds: { type: [mongoose.Schema.Types.ObjectId], default: [] },
     lastStudiedAt: { type: Date, default: null },
+    totalStudyTime: { type: Number, default: 0 }, // in minutes
+    streakDays: { type: Number, default: 0 }, // consecutive study days
+    lastStreakDate: { type: Date, default: null },
   },
   { timestamps: true }
 );

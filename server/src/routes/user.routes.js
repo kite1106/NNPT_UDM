@@ -4,6 +4,8 @@ import { User } from '../models/User.js';
 import { Topic } from '../models/Topic.js';
 import { Lesson } from '../models/Lesson.js';
 import { Progress } from '../models/Progress.js';
+import { Vocabulary } from '../models/Vocabulary.js';
+import { Quiz } from '../models/Quiz.js';
 
 const router = Router();
 
@@ -42,6 +44,22 @@ router.post('/topics/:topicId/lessons/:lessonId/complete', requireAuth, async (r
 router.get('/progress', requireAuth, async (req, res) => {
   const progress = await Progress.find({ userId: req.user.sub }).sort({ updatedAt: -1 });
   return res.json({ progress });
+});
+
+router.get('/topics/:topicId/vocabularies', requireAuth, async (req, res) => {
+  const vocabularies = await Vocabulary.find({ topicId: req.params.topicId }).sort({ createdAt: 1 });
+  return res.json({ vocabularies });
+});
+
+router.get('/topics/:topicId/quizzes', requireAuth, async (req, res) => {
+  const quizzes = await Quiz.find({ topicId: req.params.topicId, isActive: true }).sort({ createdAt: 1 });
+  return res.json({ quizzes });
+});
+
+router.get('/quizzes/:quizId', requireAuth, async (req, res) => {
+  const quiz = await Quiz.findById(req.params.quizId).populate('questionIds');
+  if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+  return res.json({ quiz });
 });
 
 export default router;
