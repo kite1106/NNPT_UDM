@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "seed:admin": "node src/scripts/seedAdmin.js"
+    "seed:admin": "node src/scripts/seedAdmin.js",
+    "fix:trailing-commas": "node scripts/fixTrailingCommas.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
