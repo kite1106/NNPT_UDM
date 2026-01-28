@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [accessToken, setAccessToken] = useState(localStorage.getItem('accessToken') || '');
   const [refreshToken, setRefreshToken] = useState(localStorage.getItem('refreshToken') || '');
+  const [authLoading, setAuthLoading] = useState(Boolean(localStorage.getItem('accessToken')));
 
   async function refreshTokens() {
     if (!refreshToken) throw new Error('No refresh token');
@@ -102,20 +103,38 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (accessToken && !user) {
-      fetch(`${API_BASE}/api/user/me`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      })
-        .then((res) => res.json())
-        .then((data) => {
+      const fetchUserData = async (retries = 3) => {
+        setAuthLoading(true);
+        try {
+          const res = await apiCall(`${API_BASE}/api/user/me`);
+          if (!res.ok) {
+            if (res.status === 401) {
+              logout();
+              return;
+            }
+            return;
+          }
+
+          const data = await res.json();
           if (data.user) setUser(data.user);
-        })
-        .catch(() => {});
+        } catch (err) {
+          if (retries > 0) {
+            setTimeout(() => fetchUserData(retries - 1), 1000);
+          }
+        } finally {
+          setAuthLoading(false);
+        }
+      };
+
+      fetchUserData();
+    } else {
+      setAuthLoading(false);
     }
   }, [accessToken, user]);
 
   const value = useMemo(
-    () => ({ user, accessToken, refreshToken, login, register, logout, apiCall }),
-    [user, accessToken, refreshToken]
+    () => ({ user, accessToken, refreshToken, authLoading, login, register, logout, apiCall }),
+    [user, accessToken, refreshToken, authLoading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
