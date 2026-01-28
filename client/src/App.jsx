@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
+import LandingPage from './pages/LandingPage.jsx';
 
 function ProtectedRoute({ children }) {
   const { accessToken } = useAuth();
@@ -22,10 +23,11 @@ export default function App() {
   return (
     <AuthProvider>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route
-          path="/"
+          path="/home"
           element={
             <ProtectedRoute>
               <HomePage />

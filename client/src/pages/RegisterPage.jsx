@@ -1,52 +1,82 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext.jsx';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext.jsx";
+import Button from "../components/Button.jsx";
+import Input from "../components/Input.jsx";
 
 export default function RegisterPage() {
   const { register } = useAuth();
   const nav = useNavigate();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await register({ name, email, password });
+      nav("/home");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div style={{ maxWidth: 420, margin: '40px auto', fontFamily: 'system-ui' }}>
-      <h2>Register</h2>
-      {error ? <div style={{ color: 'crimson', marginBottom: 12 }}>{error}</div> : null}
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setError('');
-          try {
-            await register({ name, email, password });
-            nav('/');
-          } catch (err) {
-            setError(err.message);
-          }
-        }}
-      >
-        <div style={{ marginBottom: 10 }}>
-          <label>Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} style={{ width: '100%' }} />
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <label>Email</label>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: '100%' }} />
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <label>Password</label>
-          <input
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+        <h2 className="text-3xl font-bold text-center text-gray-900 mb-6">
+          Đăng ký
+        </h2>
+        {error && (
+          <div className="bg-red-100 text-red-700 px-4 py-2 rounded-lg mb-4">
+            {error}
+          </div>
+        )}
+        <form onSubmit={handleSubmit}>
+          <Input
+            label="Họ và tên"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+          <Input
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <Input
+            label="Mật khẩu"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            style={{ width: '100%' }}
+            required
           />
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
+          </Button>
+        </form>
+        <div className="mt-6 text-center text-sm text-gray-600">
+          Đã có tài khoản?{" "}
+          <Link
+            to="/login"
+            className="text-blue-600 hover:underline font-medium"
+          >
+            Đăng nhập ngay
+          </Link>
         </div>
-        <button type="submit">Create</button>
-      </form>
-      <div style={{ marginTop: 12 }}>
-        <Link to="/login">Back to login</Link>
+        <div className="mt-4 text-center">
+          <Link to="/" className="text-gray-500 hover:text-gray-700 text-sm">
+            ← Về trang chủ
+          </Link>
+        </div>
       </div>
     </div>
   );
