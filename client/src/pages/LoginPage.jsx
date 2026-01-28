@@ -1,16 +1,29 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../auth/AuthContext.jsx";
-import Button from "../components/Button.jsx";
-import Input from "../components/Input.jsx";
+
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext.jsx';
+import Button from '../components/Button.jsx';
+import Input from '../components/Input.jsx';
+
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const nav = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Handle redirect after successful login
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        nav('/admin');
+      } else {
+        nav('/home');
+      }
+    }
+  }, [user, nav]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

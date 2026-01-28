@@ -8,13 +8,15 @@ import AdminPage from './pages/AdminPage.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 
 function ProtectedRoute({ children }) {
-  const { accessToken } = useAuth();
+  const { accessToken, authLoading } = useAuth();
+  if (authLoading) return null;
   if (!accessToken) return <Navigate to="/login" replace />;
   return children;
 }
 
 function AdminRoute({ children }) {
-  const { user } = useAuth();
+  const { user, authLoading } = useAuth();
+  if (authLoading) return null;
   if (!user || user.role !== 'admin') return <Navigate to="/" replace />;
   return children;
 }
